@@ -66,5 +66,9 @@
   (lambda () (map (lambda (i) (aiExportFormatDesc-id (aiGetExportFormatDescription i)))
 	     (iota (aiGetExportFormatCount)))))
 
-(define (print-scene filename)
-  (with-scene-from-file filename displayln))
+(define +gltf-format+ "gltf2")
+
+(define (convert-to-gltf input-filename output-filename)
+  (with-scene-from-file input-filename
+			(lambda (scene)
+			  (aiExportScene scene +gltf-format+ output-filename 0))))
