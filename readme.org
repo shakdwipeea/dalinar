@@ -1,0 +1,8 @@
+assimp bindings
+
+* Usage
+
+#+BEGIN_SRC bash
+(import :dalinar/assimp)                                             
+(convert-to-gltf "models/interior_living_room.obj" "models/int.gltf")
+#+END_SRC
