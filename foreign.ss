@@ -44,6 +44,16 @@
              (if (##fx< r 0)
                (##fx- (##c-code "___RESULT = ___FIX (errno);"))
                r))))
+      ;; Definitions:
+      ;; struct is the name of the struct
+      ;; members is a pair of member name and type
+      ;;
+      ;; Usage:
+      ;; for a c struct X with members a of type t1 and b of type t2
+      ;; (define-c-struct X) => create symbols X and X* referring to their
+      ;;    struct and pointer to the struct
+      ;; (define-c-struct X ((a . t1) (b . t2))) => apart from X and X* symbols as
+      ;;    described above, ir creates X-a and X-b c lambdas to get value from a pointer type
       (define-macro (define-c-struct struct #!optional (members '()))
 	(let* ((struct-str (symbol->string struct))
 	       (struct-ptr (string->symbol (string-append struct-str "*"))))
