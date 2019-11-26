@@ -6,10 +6,11 @@
 
 (defsyntax (begin-ffi stx)
   (def (namespace-def ns ids)
+    (displayln ids)
     (if (null? ids) []
-        (with-syntax ((prefix (string-append (if (symbol? ns) (symbol->string ns) ns) "#"))
-                      ((id ...) ids))
-          [#'(namespace (prefix id ...))])))
+	(with-syntax ((prefix (string-append (if (symbol? ns) (symbol->string ns) ns) "#"))
+		      ((id ...) ids))
+	  [#'(namespace (prefix id ...))])))
 
   (def (prelude-macros)
     '((define-macro (define-guard guard defn)
@@ -59,17 +60,53 @@
 	       (struct-ptr (string->symbol (string-append struct-str "*"))))
 	  `(begin (c-define-type ,struct (struct ,struct-str))
 		  (c-define-type ,struct-ptr (pointer ,struct))
-		  ;; getters
-		  ,@(map (lambda (m)
-			   (let ((member-name (symbol->string (car m)))
-				 (member-type (cdr m)))
-			     `(define ,(string->symbol
-					(string-append struct-str "-" member-name))
-				(c-lambda (,struct-ptr) ,member-type
-				     ,(string-append "___return(___arg1->"
-						     member-name
-						     ");")))))
-			 members))))))
+
+		  ;; getter and setters
+		  ,@(apply append
+		     (map (lambda (m)
+		  	    (let* ((member-name (symbol->string (car m)))
+		  		   (member-type (cdr m))
+		  		   (getter-name (string-append struct-str "-" member-name)))
+		  	      `((define ,(string->symbol getter-name)
+		  		  (c-lambda (,struct-ptr) ,member-type
+		  		       ,(string-append
+		  			 "___return(___arg1->" member-name ");")))
+				
+		  		(define ,(string->symbol
+		  			  (string-append getter-name "-set!"))
+		  		  (c-lambda (,struct-ptr ,member-type) void
+		  		       ,(string-append
+		  			 "___arg1->" member-name " = ___arg2;" "\n"
+		  			 "___return;"))))))
+		  	  members))
+		  
+		  ;; malloc
+		  (define ,(string->symbol (string-append "malloc-" struct-str))
+		    (c-lambda () ,struct-ptr
+		  	 ,(string-append
+		  	  "struct " struct-str " *var = malloc(sizeof(struct " struct-str "));" "\n"
+		  	  "if (var == NULL)" "\n"
+		  	  "    ___return (NULL);" "\n"
+		  	  "___return(var);")))
+
+		  ;; malloc array
+		  (define ,(string->symbol (string-append "malloc-" struct-str "-array"))
+		    (c-lambda (unsigned-int32) ,struct-ptr
+		  	 ,(string-append
+		  	  "struct " struct-str " *arr_var=malloc(___arg1*sizeof(struct " struct-str "));" "\n"
+		  	  "if (arr_var == NULL)" "\n"
+		  	  "    ___return (NULL);" "\n"
+		  	  "___return(arr_var);")))
+
+		  ;; ref array
+		  (define ,(string->symbol (string-append struct-str "-array-ref"))
+		    (c-lambda (,struct-ptr unsigned-int32) ,struct-ptr
+		  	 "___return(___arg1 + ___arg2);"))
+
+		  ;; set! array
+		  (define ,(string->symbol (string-append struct-str "-array-set!"))
+		    (c-lambda (,struct-ptr unsigned-int32 ,struct-ptr) void
+		  	 "*(___arg1 + ___arg2) = *___arg3; ___return;")))))))
 
   (def (prelude-c-decls)
     '((c-declare "#include <stdlib.h>")
