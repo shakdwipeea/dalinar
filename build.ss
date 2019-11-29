@@ -4,5 +4,5 @@
 
 (defbuild-script '("foreign"
 		   "test"
-		   ;; (gxc: "assimp" "-ld-options" "-lassimp")
-		   ))
+		   (gxc: "assimp" "-ld-options" "-lassimp")
+		   (exe: "app")))
