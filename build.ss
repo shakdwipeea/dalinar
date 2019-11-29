@@ -3,4 +3,6 @@
 (import :std/build-script)
 
 (defbuild-script '("foreign"
-		   (gxc: "assimp" "-ld-options" "-lassimp")))
+		   "test"
+		   ;; (gxc: "assimp" "-ld-options" "-lassimp")
+		   ))
